@@ -117,9 +117,18 @@ else:
     CORS_ALLOW_ALL_ORIGINS = True
 
 # ── CSRF ──────────────────────────────────────────────────────────────────────
+# Django 4.0+ requires schemes (https://) in CSRF_TRUSTED_ORIGINS
 _csrf_origins = config('CSRF_TRUSTED_ORIGINS', default='')
+if not _csrf_origins:
+    _csrf_origins = _cors_origins
+
 if _csrf_origins:
-    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',')]
+    CSRF_TRUSTED_ORIGINS = []
+    for o in _csrf_origins.split(','):
+        o = o.strip()
+        if o and not o.startswith('http'):
+            o = f'https://{o}'
+        if o:
+            CSRF_TRUSTED_ORIGINS.append(o)
 else:
-    # Use CORS origins if CSRF is not specifically set
-    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _cors_origins.split(',')] if _cors_origins else []
+    CSRF_TRUSTED_ORIGINS = []
