@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -56,11 +57,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'taskmanager.wsgi.application'
 
+# ── Database ──────────────────────────────────────────────────────────────────
+# Railway injects DATABASE_URL automatically when you add a PostgreSQL plugin.
+# Falls back to local SQLite for development (no config needed).
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -77,11 +82,20 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# ── Static files (WhiteNoise) ─────────────────────────────────────────────────
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Django 5.x requires STORAGES dict (STATICFILES_STORAGE is deprecated)
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ── REST Framework ────────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -98,4 +112,11 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Dev: allow everything. Prod: set CORS_ALLOWED_ORIGINS in Railway env vars
+# e.g.  CORS_ALLOWED_ORIGINS=https://taskflow.vercel.app,https://www.taskflow.vercel.app
+_cors_origins = config('CORS_ALLOWED_ORIGINS', default='')
+if _cors_origins:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',')]
+else:
+    CORS_ALLOW_ALL_ORIGINS = True          # safe — only active in dev (DEBUG=True)
