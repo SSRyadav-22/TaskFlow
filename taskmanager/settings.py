@@ -58,8 +58,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'taskmanager.wsgi.application'
 
 # ── Database ──────────────────────────────────────────────────────────────────
-# Railway injects DATABASE_URL automatically when you add a PostgreSQL plugin.
-# Falls back to local SQLite for development (no config needed).
 DATABASES = {
     'default': dj_database_url.config(
         default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
@@ -86,7 +84,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Django 5.x requires STORAGES dict (STATICFILES_STORAGE is deprecated)
 STORAGES = {
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
@@ -113,17 +110,16 @@ SIMPLE_JWT = {
 }
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# Dev: allow everything. Prod: set CORS_ALLOWED_ORIGINS in Railway env vars
-# e.g.  CORS_ALLOWED_ORIGINS=https://taskflow.vercel.app,https://www.taskflow.vercel.app
 _cors_origins = config('CORS_ALLOWED_ORIGINS', default='')
 if _cors_origins:
     CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',')]
 else:
+    CORS_ALLOW_ALL_ORIGINS = True
+
 # ── CSRF ──────────────────────────────────────────────────────────────────────
-# Required for Django 4.0+ in production
 _csrf_origins = config('CSRF_TRUSTED_ORIGINS', default='')
 if _csrf_origins:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',')]
 else:
-    # Fallback to CORS origins if CSRF is not specifically set
+    # Use CORS origins if CSRF is not specifically set
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in _cors_origins.split(',')] if _cors_origins else []
