@@ -119,4 +119,11 @@ _cors_origins = config('CORS_ALLOWED_ORIGINS', default='')
 if _cors_origins:
     CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',')]
 else:
-    CORS_ALLOW_ALL_ORIGINS = True          # safe — only active in dev (DEBUG=True)
+# ── CSRF ──────────────────────────────────────────────────────────────────────
+# Required for Django 4.0+ in production
+_csrf_origins = config('CSRF_TRUSTED_ORIGINS', default='')
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',')]
+else:
+    # Fallback to CORS origins if CSRF is not specifically set
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _cors_origins.split(',')] if _cors_origins else []
